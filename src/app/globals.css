@@ -3,16 +3,83 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
-    @apply bg-amber-50 text-gray-800 dark:bg-gray-950 dark:text-gray-100;
+    @apply bg-amber-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100;
+  }
+
+  /* Visible, accessible focus ring for keyboard users */
+  :focus-visible {
+    outline: 2px solid theme('colors.emerald.500');
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Native controls follow the brand color */
+  input,
+  select,
+  textarea,
+  button {
+    font-family: inherit;
+  }
+
+  /* Respect cursor semantics: everything clickable shows a pointer */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  label[for],
+  select:not(:disabled) {
+    cursor: pointer;
+  }
+
+  /* Tidy mobile tap feedback */
+  a,
+  button,
+  [role='button'] {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
-/* Hide scrollbar for smooth horizontal scrolling */
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
+@layer utilities {
+  /* Hide scrollbar for smooth horizontal scrolling */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+
+/* Barcode scanner sweep animation */
+@keyframes scanline {
+  0% {
+    transform: translateY(-16px);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateY(16px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-16px);
+    opacity: 0.35;
+  }
+}
+
+.animate-scanline {
+  animation: scanline 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

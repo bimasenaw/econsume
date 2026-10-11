@@ -1,285 +1,275 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import Link from 'next/link';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { SEED_PRODUCTS, ProductData } from '@/data/seedData';
+import type { ProductData } from '@/data/seedData';
 import EcoBadge from '@/components/EcoBadge';
-import { 
-  Search, 
-  Filter, 
-  Scale, 
-  Sparkles, 
-  Leaf, 
-  X, 
-  Check, 
+import {
+  Search,
   ShoppingBag,
-  ExternalLink
+  Loader2,
+  ExternalLink,
+  Globe,
+  Sparkles,
 } from 'lucide-react';
 
+const SUGGESTED: Array<{ id: string; label: string; query: string }> = [
+  { id: 'beras', label: 'Beras', query: 'beras' },
+  { id: 'minyak', label: 'Minyak Goreng', query: 'minyak goreng' },
+  { id: 'gula', label: 'Gula Pasir', query: 'gula pasir' },
+  { id: 'telur', label: 'Telur', query: 'telur' },
+  { id: 'tepung', label: 'Tepung Terigu', query: 'tepung terigu' },
+  { id: 'mie', label: 'Mie Instan', query: 'mie instan' },
+  { id: 'kecap', label: 'Kecap Manis', query: 'kecap manis' },
+  { id: 'sambal', label: 'Sambal', query: 'sambal' },
+];
+
+interface SuggestedItem {
+  id: string;
+  label: string;
+  query: string;
+  product: ProductData | null;
+}
+
+function ProductCard({ product, label }: { product: ProductData; label?: string }) {
+  const { addToShoppingList } = useApp();
+
+  return (
+    <div className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 flex flex-col gap-2">
+      <div className="h-28 rounded-xl overflow-hidden bg-white dark:bg-slate-900 flex items-center justify-center">
+        {product.imageUrl ? (
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-contain"
+          />
+        ) : (
+          <ShoppingBag className="w-8 h-8 text-slate-300" />
+        )}
+      </div>
+
+      {label && (
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 w-fit">
+          {label}
+        </span>
+      )}
+
+      <div className="text-xs font-semibold text-sky-600 line-clamp-1">{product.brand}</div>
+      <div className="text-sm font-bold text-slate-900 dark:text-white line-clamp-2">{product.name}</div>
+
+      <div className="flex items-center gap-2 mt-auto">
+        {product.grade && product.ecoScore > 0 ? (
+          <EcoBadge grade={product.grade} score={product.ecoScore} size="sm" />
+        ) : (
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+            Skor OFF belum ada
+          </span>
+        )}
+        <a
+          href={`https://world.openfoodfacts.org/product/${product.barcode}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ml-auto inline-flex items-center gap-1 text-[10px] font-bold text-sky-700 dark:text-sky-300 hover:underline"
+        >
+          OFF <ExternalLink className="w-3 h-3" />
+        </a>
+      </div>
+
+      <button
+        onClick={() => {
+          addToShoppingList(product, 1, false);
+          alert(`${product.name} ditambahkan ke Daftar Belanja!`);
+        }}
+        className="cursor-pointer mt-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1 transition-colors"
+      >
+        <ShoppingBag className="w-3.5 h-3.5" /> + Belanja
+      </button>
+    </div>
+  );
+}
+
+async function fetchFirst(query: string): Promise<ProductData | null> {
+  try {
+    const r1 = await fetch(`/api/products?source=off&q=${encodeURIComponent(query)}&country=indonesia`);
+    if (r1.ok) {
+      const d1 = await r1.json();
+      if ((d1.products as ProductData[])?.length) return (d1.products as ProductData[])[0];
+    }
+  } catch {
+    /* lanjut ke fallback tanpa filter negara */
+  }
+  try {
+    const r2 = await fetch(`/api/products?source=off&q=${encodeURIComponent(query)}`);
+    if (r2.ok) {
+      const d2 = await r2.json();
+      if ((d2.products as ProductData[])?.length) return (d2.products as ProductData[])[0];
+    }
+  } catch {
+    /* abaikan */
+  }
+  return null;
+}
+
 export default function ProductsPage() {
-  const { compareList, addToCompare, removeFromCompare, clearCompare, addToShoppingList } = useApp();
+  const [offQuery, setOffQuery] = useState('');
+  const [offLoading, setOffLoading] = useState(false);
+  const [offResults, setOffResults] = useState<ProductData[]>([]);
+  const [offError, setOffError] = useState<string | null>(null);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Semua');
-  const [selectedGrade, setSelectedGrade] = useState('Semua');
-  const [selectedCert, setSelectedCert] = useState('Semua');
-  const [showCompareModal, setShowCompareModal] = useState(false);
+  const [suggested, setSuggested] = useState<SuggestedItem[]>([]);
+  const [suggestedLoading, setSuggestedLoading] = useState(true);
 
-  const categories = ['Semua', 'Makanan & Minuman', 'Perawatan Diri', 'Pembersih Rumah', 'Dapur & Pantry'];
-  const grades = ['Semua', 'A', 'B', 'C', 'D', 'E'];
-  const certOptions = ['Semua', 'Organik', 'Fair Trade', 'FSC', 'Zero Waste', 'Cruelty-Free'];
+  const runSearch = async (q: string) => {
+    const term = q.trim();
+    if (!term) return;
+    setOffLoading(true);
+    setOffError(null);
+    setOffResults([]);
+    try {
+      const res = await fetch(`/api/products?source=off&q=${encodeURIComponent(term)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal mencari di Open Food Facts.');
+      const products = data.products as ProductData[];
+      setOffResults(products);
+      if (products.length === 0) {
+        setOffError(`Tidak ada produk cocok untuk "${term}" di Open Food Facts. Coba kata kunci lain.`);
+      }
+    } catch (err) {
+      setOffError(err instanceof Error ? err.message : 'Gagal mencari.');
+    } finally {
+      setOffLoading(false);
+    }
+  };
 
-  const allProducts = useMemo(() => [...SEED_PRODUCTS], []);
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    void runSearch(offQuery);
+  };
 
-  const filteredProducts = useMemo(() => {
-    return allProducts.filter((prod) => {
-      const matchSearch =
-        prod.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        prod.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        prod.ingredients.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchCategory = selectedCategory === 'Semua' || prod.category === selectedCategory;
-      const matchGrade = selectedGrade === 'Semua' || prod.grade === selectedGrade;
-      const matchCert =
-        selectedCert === 'Semua' ||
-        prod.certifications.some((c) => c.toLowerCase().includes(selectedCert.toLowerCase()));
-
-      return matchSearch && matchCategory && matchGrade && matchCert;
-    });
-  }, [searchQuery, selectedCategory, selectedGrade, selectedCert]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setSuggestedLoading(true);
+      const items: SuggestedItem[] = await Promise.all(
+        SUGGESTED.map(async (s) => ({ ...s, product: await fetchFirst(s.query) }))
+      );
+      if (cancelled) return;
+      setSuggested(items);
+      setSuggestedLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-gray-900 p-6 rounded-3xl border border-emerald-100 dark:border-gray-800 shadow-sm">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Katalog Berkelanjutan</span>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold">
-              {filteredProducts.length} Produk
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white mt-1">
-            Eco-Product Finder
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Cari produk ramah lingkungan dengan Eco-Score transparan, sertifikasi hijau, dan jejak karbon rendah.
-          </p>
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-emerald-100 dark:border-slate-800 shadow-sm">
+        <div className="flex items-center gap-2">
+          <Globe className="w-5 h-5 text-sky-600" />
+          <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Pencarian Produk Nyata</span>
         </div>
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1">
+          Eco-Product Finder
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Cari produk nyata dari basis data terbuka Open Food Facts — lengkap dengan Eco-Score &amp; Nutri-Score bila
+          tersedia. Bukan katalog buatan, semua data langsung dari OFF.
+        </p>
+      </div>
 
-        {compareList.length > 0 && (
+      {/* Open Food Facts live search */}
+      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 shadow-sm space-y-4">
+        <div className="flex items-center gap-2">
+          <Search className="w-5 h-5 text-sky-600" />
+          <h2 className="font-black text-slate-900 dark:text-white">Cari Produk Nyata</h2>
+        </div>
+        <p className="text-xs text-slate-500 -mt-2">
+          Basis data terbuka &amp; crowd-sourced. Hasil menampilkan Eco-Score/Nutri-Score nyata bila tersedia.
+        </p>
+        <form onSubmit={handleSearch} className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={offQuery}
+              onChange={(e) => setOffQuery(e.target.value)}
+              placeholder="cth: beras, indomie, susu, sampo…"
+              className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none"
+            />
+          </div>
           <button
-            onClick={() => setShowCompareModal(true)}
-            className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-teal-500/20 flex items-center gap-2 transition-all"
+            type="submit"
+            disabled={offLoading}
+            className="cursor-pointer px-5 py-3 rounded-2xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-sm font-bold transition-colors"
           >
-            <Scale className="w-4 h-4" />
-            <span>Bandingkan ({compareList.length}/3)</span>
+            {offLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Cari'}
           </button>
+        </form>
+
+        {offError && (
+          <p
+            role="alert"
+            className="text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-xl px-3 py-2"
+          >
+            {offError}
+          </p>
+        )}
+
+        {offResults.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {offResults.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
         )}
       </div>
 
-      {/* Search & Filter Chips */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-gray-900 border border-emerald-100 dark:border-gray-800 shadow-sm space-y-4">
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari nama produk, merek, atau bahan organik..."
-            className="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-amber-50/20 dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-white"
-          />
+      {/* Suggested products (prioritaskan Indonesia) */}
+      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-800 shadow-sm space-y-4">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-emerald-600" />
+          <h2 className="font-black text-slate-900 dark:text-white">Produk Disarankan</h2>
         </div>
+        <p className="text-xs text-slate-500 -mt-2">
+          Rekomendasi kebutuhan pokok dari Open Food Facts — diutamakan produk dari Indonesia.
+        </p>
 
-        {/* Filter Sections */}
-        <div className="flex flex-col gap-3 pt-2">
-          {/* Categories */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-semibold hide-scrollbar">
-            <span className="text-gray-400 shrink-0">Kategori:</span>
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-xl shrink-0 transition-all ${
-                  selectedCategory === cat
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
-                }`}
-              >
-                {cat}
-              </button>
+        {suggestedLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {SUGGESTED.map((s) => (
+              <div
+                key={s.id}
+                className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 animate-pulse h-64"
+              />
             ))}
           </div>
-
-          {/* Eco-Score Grade */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-semibold hide-scrollbar">
-            <span className="text-gray-400 shrink-0">Eco-Score:</span>
-            {grades.map((gr) => (
-              <button
-                key={gr}
-                onClick={() => setSelectedGrade(gr)}
-                className={`px-3 py-1.5 rounded-xl shrink-0 transition-all ${
-                  selectedGrade === gr
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
-                }`}
-              >
-                {gr === 'Semua' ? 'Semua Grade' : `Grade ${gr}`}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Product Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredProducts.map((product) => {
-          const isComparing = compareList.some((p) => p.id === product.id);
-          return (
-            <div
-              key={product.id}
-              className="group p-4 rounded-3xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 hover:border-emerald-300 dark:hover:border-emerald-700 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
-            >
-              <div>
-                <div className="relative w-full h-44 rounded-2xl overflow-hidden mb-3 bg-gray-100 dark:bg-gray-800">
-                  <img
-                    src={product.imageUrl}
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute top-2.5 right-2.5">
-                    <EcoBadge grade={product.grade} score={product.ecoScore} size="sm" />
-                  </div>
-                  <div className="absolute bottom-2.5 left-2.5">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black/60 text-white backdrop-blur-sm">
-                      {product.category}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="text-xs font-semibold text-emerald-600 mb-0.5">{product.brand}</div>
-                <h3 className="font-extrabold text-sm text-gray-900 dark:text-white leading-snug line-clamp-2 mb-2">
-                  {product.name}
-                </h3>
-
-                {/* Certifications badges */}
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {product.certifications.slice(0, 2).map((cert, i) => (
-                    <span
-                      key={i}
-                      className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-100 dark:border-emerald-900"
-                    >
-                      {cert}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-black text-gray-900 dark:text-white">
-                    Rp {product.price.toLocaleString('id-ID')}
-                  </div>
-                  <span className="text-[11px] text-gray-400 font-medium">{product.unit}</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => {
-                      if (isComparing) {
-                        removeFromCompare(product.id);
-                      } else {
-                        addToCompare(product);
-                      }
-                    }}
-                    className={`py-2 rounded-xl text-xs font-bold border transition-colors flex items-center justify-center gap-1 ${
-                      isComparing
-                        ? 'bg-teal-50 border-teal-400 text-teal-700'
-                        : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Scale className="w-3.5 h-3.5" />
-                    <span>{isComparing ? 'Dibatalkan' : 'Bandingkan'}</span>
-                  </button>
-                  <Link
-                    href={`/products/${product.id}`}
-                    className="py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors text-center"
-                  >
-                    Detail
-                  </Link>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Side-by-Side Comparison Modal */}
-      {showCompareModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 max-w-4xl w-full p-6 sm:p-8 max-h-[90vh] overflow-y-auto space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-black text-gray-900 dark:text-white">
-                  Perbandingan Produk Side-by-Side
-                </h3>
-                <p className="text-xs text-gray-500">Bandingkan metrik Eco-Score, bahan, dan harga</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={clearCompare}
-                  className="text-xs font-bold text-rose-600 hover:underline"
-                >
-                  Bersihkan
-                </button>
-                <button
-                  onClick={() => setShowCompareModal(false)}
-                  className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-500"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Comparison Table */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {compareList.map((p) => (
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {suggested.map((s) =>
+              s.product ? (
+                <ProductCard key={s.id} product={s.product} label={s.label} />
+              ) : (
                 <div
-                  key={p.id}
-                  className="p-4 rounded-2xl bg-amber-50/40 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 space-y-3 flex flex-col justify-between"
+                  key={s.id}
+                  className="p-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-center min-h-[180px]"
                 >
-                  <div>
-                    <img src={p.imageUrl} alt={p.name} className="w-full h-32 object-cover rounded-xl mb-2" />
-                    <EcoBadge grade={p.grade} score={p.ecoScore} size="sm" showLabel />
-                    <h4 className="font-bold text-sm text-gray-900 dark:text-white mt-2">{p.name}</h4>
-                    <div className="text-xs text-emerald-600 font-semibold">{p.brand}</div>
-                    
-                    <div className="mt-3 space-y-1.5 text-xs text-gray-600 dark:text-gray-300">
-                      <div><strong>Harga:</strong> Rp {p.price.toLocaleString('id-ID')}</div>
-                      <div><strong>Jejak Karbon:</strong> {p.co2PerUnitKg} kg CO₂/unit</div>
-                      <div><strong>Kemasan:</strong> {p.packagingType}</div>
-                      <div><strong>Asal:</strong> {p.origin}</div>
-                    </div>
-                  </div>
-
+                  <Sparkles className="w-6 h-6 text-slate-300" />
+                  <div className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-200">{s.label}</div>
                   <button
-                    onClick={() => {
-                      addToShoppingList(p);
-                      alert(`${p.name} ditambahkan ke Daftar Belanja!`);
-                    }}
-                    className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1"
+                    onClick={() => void runSearch(s.query)}
+                    className="mt-1 text-[11px] font-bold text-sky-600 hover:underline cursor-pointer"
                   >
-                    <ShoppingBag className="w-3.5 h-3.5" />
-                    <span>+ Belanja</span>
+                    Cari di OFF
                   </button>
                 </div>
-              ))}
-            </div>
+              )
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

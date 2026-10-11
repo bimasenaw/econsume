@@ -2,24 +2,12 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { notFound, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { SEED_PRODUCTS } from '@/data/seedData';
 import { calculateProductEcoScore } from '@/lib/algorithms';
 import EcoBadge from '@/components/EcoBadge';
-import { 
-  ArrowLeft, 
-  ShieldCheck, 
-  Leaf, 
-  Package, 
-  MapPin, 
-  Sparkles, 
-  Plus, 
-  ShoppingBag, 
-  Scale, 
-  Share2, 
-  AlertCircle 
-} from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Plus, ShoppingBag } from 'lucide-react';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -57,7 +45,7 @@ export default function ProductDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white dark:bg-gray-900 p-6 sm:p-8 rounded-3xl border border-emerald-100 dark:border-gray-800 shadow-sm">
         {/* Product Image */}
         <div className="relative rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 h-80 sm:h-96">
-          <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+          <img src={product.imageUrl} alt={product.name} decoding="async" className="w-full h-full object-cover" />
           <div className="absolute top-4 right-4">
             <EcoBadge grade={product.grade} score={product.ecoScore} size="lg" />
           </div>

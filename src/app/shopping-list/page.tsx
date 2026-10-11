@@ -10,13 +10,31 @@ import {
   Plus, 
   Check, 
   ShoppingBag, 
-  ArrowLeft, 
-  Leaf, 
-  AlertCircle,
-  Share2,
-  DollarSign
+  Leaf,
+  Loader2,
 } from 'lucide-react';
-import { SEED_PRODUCTS } from '@/data/seedData';
+import { SEED_PRODUCTS, type ProductData } from '@/data/seedData';
+
+async function fetchOffProduct(q: string): Promise<ProductData | null> {
+  const tryFetch = async (url: string) => {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const products = data.products as ProductData[] | undefined;
+    return products && products.length ? products[0] : null;
+  };
+  try {
+    const r = await tryFetch(`/api/products?source=off&q=${encodeURIComponent(q)}&country=indonesia`);
+    if (r) return r;
+  } catch {
+    /* lanjut ke pencarian tanpa filter negara */
+  }
+  try {
+    return await tryFetch(`/api/products?source=off&q=${encodeURIComponent(q)}`);
+  } catch {
+    return null;
+  }
+}
 
 export default function ShoppingListPage() {
   const { 
@@ -30,24 +48,62 @@ export default function ShoppingListPage() {
 
   const [newItemName, setNewItemName] = useState('');
   const [copiedNotification, setCopiedNotification] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   // Financial & Carbon totals
   const totalEstimatedPrice = shoppingList.reduce((acc, curr) => acc + (curr.estimatedPrice || 0), 0);
   const totalCarbonSaved = shoppingList.reduce((acc, curr) => acc + (curr.carbonSavedKg || 0), 0);
   const completedCount = shoppingList.filter((item) => item.checked).length;
 
-  const handleManualAdd = (e: React.FormEvent) => {
+  const handleManualAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newItemName.trim()) return;
+    const name = newItemName.trim();
+    if (!name || adding) return;
+    setAdding(true);
 
-    // Try finding matching seed product or default to generic
-    const found = SEED_PRODUCTS.find((p) => p.name.toLowerCase().includes(newItemName.toLowerCase()));
+    // Match an existing catalog product, otherwise search real products from OFF.
+    const found = SEED_PRODUCTS.find(
+      (p) =>
+        p.name.toLowerCase().includes(name.toLowerCase()) ||
+        p.brand.toLowerCase().includes(name.toLowerCase())
+    );
+
     if (found) {
       addToShoppingList(found, 1, false);
     } else {
-      addToShoppingList(SEED_PRODUCTS[0], 1, false);
+      const off = await fetchOffProduct(name);
+      if (off) {
+        addToShoppingList(off, 1, false);
+      } else {
+        const generic: ProductData = {
+          id: `manual-${Date.now()}`,
+          barcode: '',
+          name,
+          brand: 'Item Manual',
+          category: 'Makanan & Minuman',
+          ecoScore: 50,
+          grade: 'C',
+          carbonFootprint: 0.5,
+          sourcingScore: 0.5,
+          packagingScore: 0.5,
+          certificationScore: 0.5,
+          transparencyScore: 0.5,
+          certifications: [],
+          imageUrl: '',
+          price: 0,
+          unit: 'pcs',
+          avgLifespanDays: 14,
+          description: 'Ditambahkan manual oleh pengguna.',
+          origin: '-',
+          ingredients: '-',
+          packagingType: '-',
+          co2PerUnitKg: 2.5,
+        };
+        addToShoppingList(generic, 1, false);
+      }
     }
     setNewItemName('');
+    setAdding(false);
   };
 
   const handleCheckoutCompleted = () => {
@@ -156,10 +212,11 @@ export default function ShoppingListPage() {
           />
           <button
             type="submit"
-            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors"
+            disabled={adding}
+            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs flex items-center gap-1.5 transition-colors"
           >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Tambah</span>
+            {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            <span className="hidden sm:inline">{adding ? 'Mencari…' : 'Tambah'}</span>
           </button>
         </form>
 

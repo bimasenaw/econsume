@@ -1,38 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { predictConsumption, PredictionInput } from '@/lib/algorithms';
-import { INITIAL_INVENTORY } from '@/data/seedData';
+import { estimateConsumption, type PurchaseLog } from '@/lib/tracking';
+import { INITIAL_PURCHASES } from '@/data/seedData';
 
+/**
+ * POST /api/predict-consumption
+ * Body: { purchases?: PurchaseLog[] }
+ * Estimasi laju konsumsi dari histori pembelian NYATA (bukan katalog/skala karangan).
+ * Bila purchases tidak dikirim, memakai contoh data awal.
+ */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { userId = 'usr-001', householdSize = 4, items } = body;
+    const body = await request.json().catch(() => ({}));
+    const purchases: PurchaseLog[] =
+      Array.isArray(body?.purchases) && body.purchases.length > 0 ? body.purchases : INITIAL_PURCHASES;
 
-    let targetItems = items;
-    if (!targetItems || !Array.isArray(targetItems) || targetItems.length === 0) {
-      // Default to initial household inventory
-      targetItems = INITIAL_INVENTORY.map((inv) => ({
-        productId: inv.productId,
-        currentQuantity: inv.quantity,
-        lastPurchasedAt: inv.purchasedAt,
-        avgDailyConsumption: inv.avgDailyConsumption,
-      }));
-    }
-
-    const payload: PredictionInput = {
-      userId,
-      householdSize,
-      items: targetItems,
-    };
-
-    const predictions = predictConsumption(payload);
+    const estimates = estimateConsumption(purchases);
     return NextResponse.json({
       success: true,
-      householdSize,
-      totalPredicted: predictions.length,
-      predictions,
+      method: 'histori pembelian (empiris)',
+      total: estimates.length,
+      sufficient: estimates.filter((e) => e.sufficient).length,
+      estimates,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });
   }
+}
+
+export async function GET() {
+  return NextResponse.json({
+    method: 'POST /api/predict-consumption dengan { purchases: PurchaseLog[] }',
+    note: 'Estimasi laju konsumsi dari histori pembelian pengguna. Produk dengan data <2 pembelian / <14 hari ditandai insufficient.',
+  });
 }

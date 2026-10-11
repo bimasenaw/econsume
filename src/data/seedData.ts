@@ -1,3 +1,5 @@
+import type { PurchaseLog, WasteLogEntry } from '@/lib/tracking';
+
 export interface ProductData {
   id: string;
   barcode: string;
@@ -54,7 +56,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-01',
     barcode: '8991001100011',
-    name: 'Beras Organik Pandan Wangi 5kg',
+    name: 'Beras Organik',
     brand: 'Nusantara Organik',
     category: 'Makanan & Minuman',
     ecoScore: 92,
@@ -65,7 +67,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.95,
     transparencyScore: 0.90,
     certifications: ['Organik Indonesia', 'Fair Trade', 'Non-GMO'],
-    imageUrl: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=organic%20rice&label=Beras%20Organik',
     price: 95000,
     unit: 'sak (5kg)',
     avgLifespanDays: 30,
@@ -78,7 +80,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-02',
     barcode: '8991001100028',
-    name: 'Beras Putih Premium 5kg Standar',
+    name: 'Beras Premium',
     brand: 'Lumbung Jaya',
     category: 'Makanan & Minuman',
     ecoScore: 54,
@@ -89,7 +91,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.50,
     transparencyScore: 0.80,
     certifications: ['SNI'],
-    imageUrl: 'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=white%20rice&label=Beras%20Premium',
     price: 72000,
     unit: 'sak (5kg)',
     avgLifespanDays: 30,
@@ -102,7 +104,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-03',
     barcode: '8992002200035',
-    name: 'Minyak Goreng Kelapa Cold-Pressed 1L',
+    name: 'Minyak Kelapa',
     brand: 'CocoNusa Eco',
     category: 'Makanan & Minuman',
     ecoScore: 89,
@@ -113,7 +115,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.85,
     transparencyScore: 0.90,
     certifications: ['RSPO Certified', 'Rainforest Alliance', 'BPOM'],
-    imageUrl: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=coconut%20oil&label=Minyak%20Kelapa',
     price: 38000,
     unit: 'botol (1L)',
     avgLifespanDays: 25,
@@ -126,7 +128,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-04',
     barcode: '8992002200042',
-    name: 'Minyak Goreng Sawit Refill 2L Konvensional',
+    name: 'Minyak Sawit',
     brand: 'Sawit Prima',
     category: 'Makanan & Minuman',
     ecoScore: 42,
@@ -137,7 +139,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.50,
     transparencyScore: 0.65,
     certifications: ['SNI', 'Halal'],
-    imageUrl: 'https://images.unsplash.com/photo-1589733955941-5eeaf752f6dd?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=palm%20oil&label=Minyak%20Sawit',
     price: 34000,
     unit: 'pouch (2L)',
     avgLifespanDays: 25,
@@ -150,7 +152,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-05',
     barcode: '8993003300059',
-    name: 'Sabun Batang Alami Minyak Zaitun & Serai',
+    name: 'Sabun Batang Alami',
     brand: 'Botanica Bali',
     category: 'Perawatan Diri',
     ecoScore: 96,
@@ -161,7 +163,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.92,
     transparencyScore: 0.95,
     certifications: ['Cruelty-Free', 'Zero Waste', 'EcoCert Vegan'],
-    imageUrl: 'https://images.unsplash.com/photo-1607006314597-9b2f6bbd6e87?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=soap%20bar&label=Sabun%20Batang%20Alami',
     price: 28000,
     unit: 'bar (100g)',
     avgLifespanDays: 20,
@@ -174,7 +176,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-06',
     barcode: '8993003300066',
-    name: 'Sabun Mandi Cair Botol 450ml',
+    name: 'Sabun Mandi Cair',
     brand: 'GlowFresh Body',
     category: 'Perawatan Diri',
     ecoScore: 48,
@@ -185,7 +187,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.55,
     transparencyScore: 0.60,
     certifications: ['BPOM', 'Halal'],
-    imageUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=liquid%20soap&label=Sabun%20Mandi%20Cair',
     price: 32000,
     unit: 'botol (450ml)',
     avgLifespanDays: 20,
@@ -198,7 +200,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-07',
     barcode: '8994004400076',
-    name: 'Deterjen Ramah Lingkungan Konsentrat Lerak 1L',
+    name: 'Deterjen Ramah Lingkungan',
     brand: 'BumiBersih Lab',
     category: 'Pembersih Rumah',
     ecoScore: 94,
@@ -209,7 +211,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.90,
     transparencyScore: 0.98,
     certifications: ['USDA Biobased', 'Ecolabel', 'Dermatologist Tested'],
-    imageUrl: 'https://images.unsplash.com/photo-1585421514284-efb74c2b69ba?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=laundry%20detergent&label=Deterjen%20Ramah%20Lingkungan',
     price: 45000,
     unit: 'botol (1L)',
     avgLifespanDays: 30,
@@ -222,7 +224,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-08',
     barcode: '8994004400083',
-    name: 'Deterjen Bubuk Fosfat Sintetis 1.8kg',
+    name: 'Deterjen Bubuk',
     brand: 'SuperSparkle Wash',
     category: 'Pembersih Rumah',
     ecoScore: 32,
@@ -233,7 +235,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.40,
     transparencyScore: 0.40,
     certifications: ['SNI'],
-    imageUrl: 'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=washing%20powder&label=Deterjen%20Bubuk',
     price: 36000,
     unit: 'kantong (1.8kg)',
     avgLifespanDays: 30,
@@ -246,7 +248,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-09',
     barcode: '8995005500093',
-    name: 'Pasta Gigi Herbal Alami Tanpa SLS & Fluoride',
+    name: 'Pasta Gigi Herbal',
     brand: 'HerbalPure Dental',
     category: 'Perawatan Diri',
     ecoScore: 91,
@@ -257,7 +259,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.90,
     transparencyScore: 0.96,
     certifications: ['EcoCert', 'Cruelty-Free', 'Halal MUI'],
-    imageUrl: 'https://images.unsplash.com/photo-1559591937-e109d7092955?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=toothpaste&label=Pasta%20Gigi%20Herbal',
     price: 35000,
     unit: 'tube (100g)',
     avgLifespanDays: 45,
@@ -270,7 +272,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-10',
     barcode: '8995005500109',
-    name: 'Sikat Gigi Bambu Moso Biodegradable (Isi 2)',
+    name: 'Sikat Gigi Bambu',
     brand: 'EcoBamboo Smile',
     category: 'Perawatan Diri',
     ecoScore: 97,
@@ -281,7 +283,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.95,
     transparencyScore: 0.96,
     certifications: ['FSC Certified', 'Compostable', 'Zero Plastic'],
-    imageUrl: 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=bamboo%20toothbrush&label=Sikat%20Gigi%20Bambu',
     price: 24000,
     unit: 'pack (2 pcs)',
     avgLifespanDays: 90,
@@ -294,7 +296,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-11',
     barcode: '8996006600116',
-    name: 'Sabun Cuci Piring Cair Ekstrak Jeruk Nipis Eco',
+    name: 'Sabun Cuci Piring',
     brand: 'BumiBersih Lab',
     category: 'Pembersih Rumah',
     ecoScore: 88,
@@ -305,7 +307,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.88,
     transparencyScore: 0.92,
     certifications: ['Biodegradable Formula', 'BPOM Safe', 'Plant-Powered'],
-    imageUrl: 'https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=dishwashing%20liquid&label=Sabun%20Cuci%20Piring',
     price: 22000,
     unit: 'botol (800ml)',
     avgLifespanDays: 30,
@@ -318,7 +320,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-12',
     barcode: '8996006600123',
-    name: 'Sabun Cuci Piring Kimia Konvensional 750ml',
+    name: 'Sabun Cuci Piring',
     brand: 'SuperKilap Dish',
     category: 'Pembersih Rumah',
     ecoScore: 50,
@@ -329,7 +331,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.50,
     transparencyScore: 0.60,
     certifications: ['Kemenkes RI'],
-    imageUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=dish%20soap&label=Sabun%20Cuci%20Piring',
     price: 16000,
     unit: 'pouch (750ml)',
     avgLifespanDays: 30,
@@ -342,7 +344,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-13',
     barcode: '8997007700133',
-    name: 'Susu Gandum Oat Milk Barista Organik 1L',
+    name: 'Susu Oat',
     brand: 'OatHills Farm',
     category: 'Makanan & Minuman',
     ecoScore: 87,
@@ -353,7 +355,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.90,
     transparencyScore: 0.85,
     certifications: ['USDA Organic', 'Carbon Neutral Product', 'Vegan'],
-    imageUrl: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=oat%20milk&label=Susu%20Oat',
     price: 42000,
     unit: 'karton (1L)',
     avgLifespanDays: 10,
@@ -366,7 +368,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-14',
     barcode: '8997007700140',
-    name: 'Susu Sapi UHT Full Cream 1L Komersial',
+    name: 'Susu UHT',
     brand: 'Dairy Moo',
     category: 'Makanan & Minuman',
     ecoScore: 49,
@@ -377,7 +379,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.50,
     transparencyScore: 0.50,
     certifications: ['BPOM', 'Halal'],
-    imageUrl: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=milk&label=Susu%20UHT',
     price: 21000,
     unit: 'karton (1L)',
     avgLifespanDays: 10,
@@ -390,7 +392,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-15',
     barcode: '8998008800150',
-    name: 'Shampoo Bar Padat Zero Waste Lidah Buaya',
+    name: 'Shampoo Bar',
     brand: 'Botanica Bali',
     category: 'Perawatan Diri',
     ecoScore: 95,
@@ -401,7 +403,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.92,
     transparencyScore: 0.95,
     certifications: ['Zero Waste', 'Cruelty Free', 'Palm Oil Free'],
-    imageUrl: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=shampoo%20bar&label=Shampoo%20Bar',
     price: 36000,
     unit: 'bar (80g)',
     avgLifespanDays: 40,
@@ -414,7 +416,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-16',
     barcode: '8998008800167',
-    name: 'Shampoo Botol Plastik Anti Ketombe 340ml',
+    name: 'Shampoo Cair',
     brand: 'HairClean Pro',
     category: 'Perawatan Diri',
     ecoScore: 44,
@@ -425,7 +427,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.50,
     transparencyScore: 0.50,
     certifications: ['BPOM'],
-    imageUrl: 'https://images.unsplash.com/photo-1526947425960-945c6e72858f?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=shampoo&label=Shampoo%20Cair',
     price: 48000,
     unit: 'botol (340ml)',
     avgLifespanDays: 30,
@@ -438,7 +440,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-17',
     barcode: '8999009900177',
-    name: 'Gula Aren Kristal Organik Murni 500g',
+    name: 'Gula Aren',
     brand: 'Nusantara Organik',
     category: 'Dapur & Pantry',
     ecoScore: 93,
@@ -449,7 +451,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.94,
     transparencyScore: 0.95,
     certifications: ['Organik Indonesia', 'Fair Trade Certified', 'Low GI'],
-    imageUrl: 'https://images.unsplash.com/photo-1581447109200-bf2769116351?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=palm%20sugar&label=Gula%20Aren',
     price: 29000,
     unit: 'pouch (500g)',
     avgLifespanDays: 60,
@@ -462,7 +464,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-18',
     barcode: '8999009900184',
-    name: 'Gula Pasir Kristal Putih Rafinasi 1kg',
+    name: 'Gula Pasir',
     brand: 'Manis Murni',
     category: 'Dapur & Pantry',
     ecoScore: 52,
@@ -473,7 +475,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.55,
     transparencyScore: 0.60,
     certifications: ['SNI', 'Halal'],
-    imageUrl: 'https://images.unsplash.com/photo-1618040996337-56904b7850b9?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=sugar&label=Gula%20Pasir',
     price: 18000,
     unit: 'pack (1kg)',
     avgLifespanDays: 45,
@@ -486,7 +488,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-19',
     barcode: '8990110011198',
-    name: 'Kopi Arabika Single Origin Gayo Organik 250g',
+    name: 'Kopi Arabika',
     brand: 'Kopi Lestari Rainforest',
     category: 'Makanan & Minuman',
     ecoScore: 94,
@@ -497,7 +499,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.95,
     transparencyScore: 0.96,
     certifications: ['Rainforest Alliance', 'Shade-Grown Bird Friendly', 'Fair Trade'],
-    imageUrl: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=coffee%20bean&label=Kopi%20Arabika',
     price: 68000,
     unit: 'pack (250g)',
     avgLifespanDays: 30,
@@ -510,7 +512,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-20',
     barcode: '8990110011204',
-    name: 'Kopi Instan Sachet 3-in-1 (Isi 10)',
+    name: 'Kopi Instan',
     brand: 'FastBrew Daily',
     category: 'Makanan & Minuman',
     ecoScore: 36,
@@ -521,7 +523,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.40,
     transparencyScore: 0.50,
     certifications: ['BPOM', 'Halal'],
-    imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=instant%20coffee&label=Kopi%20Instan',
     price: 17000,
     unit: 'bag (10 sachet)',
     avgLifespanDays: 14,
@@ -534,7 +536,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-21',
     barcode: '8990220022210',
-    name: 'Spons Cuci Piring Serat Kelapa & Selulosa (Isi 3)',
+    name: 'Spons Serat Kelapa',
     brand: 'EcoScrub Natural',
     category: 'Pembersih Rumah',
     ecoScore: 98,
@@ -545,7 +547,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.95,
     transparencyScore: 0.98,
     certifications: ['100% Compostable', 'Zero Microplastics', 'FSC Cardboard'],
-    imageUrl: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=coconut%20fiber&label=Spons%20Serat%20Kelapa',
     price: 26000,
     unit: 'pack (3 pcs)',
     avgLifespanDays: 60,
@@ -558,7 +560,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-22',
     barcode: '8990220022227',
-    name: 'Spons Busa Sintetis Kuning Hijau (Isi 3)',
+    name: 'Spons Busa',
     brand: 'PolyClean Scrubber',
     category: 'Pembersih Rumah',
     ecoScore: 40,
@@ -569,7 +571,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.45,
     transparencyScore: 0.50,
     certifications: ['Kemenkes'],
-    imageUrl: 'https://images.unsplash.com/photo-1585832770485-e68a5dbfad52?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=kitchen%20sponge&label=Spons%20Busa',
     price: 12000,
     unit: 'pack (3 pcs)',
     avgLifespanDays: 30,
@@ -582,7 +584,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-23',
     barcode: '8990330033234',
-    name: 'Kecap Manis Fermentasi Kedelai Hitam Alami',
+    name: 'Kecap Manis',
     brand: 'Nusantara Organik',
     category: 'Makanan & Minuman',
     ecoScore: 90,
@@ -593,7 +595,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.90,
     transparencyScore: 0.92,
     certifications: ['Non-GMO', 'Organik Indonesia', 'Tanpa Pengawet'],
-    imageUrl: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=soy%20sauce&label=Kecap%20Manis',
     price: 31000,
     unit: 'botol (300ml)',
     avgLifespanDays: 45,
@@ -606,7 +608,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-24',
     barcode: '8990330033241',
-    name: 'Kecap Manis Refill Pouch 520ml Standar',
+    name: 'Kecap Manis',
     brand: 'Sedap Rasa',
     category: 'Makanan & Minuman',
     ecoScore: 56,
@@ -617,7 +619,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.60,
     transparencyScore: 0.65,
     certifications: ['BPOM', 'Halal'],
-    imageUrl: 'https://images.unsplash.com/photo-1627662234509-0d19f4a132e0?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=soy%20sauce&label=Kecap%20Manis',
     price: 22000,
     unit: 'pouch (520ml)',
     avgLifespanDays: 45,
@@ -630,7 +632,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-25',
     barcode: '8990440044257',
-    name: 'Tisu Toilet Bambu Tanpa Pemutih Klorin (Isi 6 Roll)',
+    name: 'Tisu Toilet Bambu',
     brand: 'TreeFree Living',
     category: 'Perawatan Diri',
     ecoScore: 96,
@@ -641,7 +643,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.96,
     transparencyScore: 0.96,
     certifications: ['FSC 100% Bamboo', 'Chlorine-Free (TCF)', 'Zero Deforestation'],
-    imageUrl: 'https://images.unsplash.com/photo-1584556812952-905ffd0c611a?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=bamboo%20toilet%20paper&label=Tisu%20Toilet%20Bambu',
     price: 48000,
     unit: 'pack (6 roll)',
     avgLifespanDays: 20,
@@ -654,7 +656,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-26',
     barcode: '8990440044264',
-    name: 'Tisu Gulung Toilet Standar Kemasan Plastik (Isi 10)',
+    name: 'Tisu Toilet',
     brand: 'SoftTissue Mega',
     category: 'Perawatan Diri',
     ecoScore: 47,
@@ -665,7 +667,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.52,
     transparencyScore: 0.58,
     certifications: ['SNI'],
-    imageUrl: 'https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=toilet%20paper&label=Tisu%20Toilet',
     price: 39000,
     unit: 'pack (10 roll)',
     avgLifespanDays: 20,
@@ -678,7 +680,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-27',
     barcode: '8990550055271',
-    name: 'Garam Laut Murni Kristal Organik Kusamba 500g',
+    name: 'Garam Laut',
     brand: 'Kusamba Heritage Salt',
     category: 'Dapur & Pantry',
     ecoScore: 97,
@@ -689,7 +691,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.94,
     transparencyScore: 0.98,
     certifications: ['Geographical Indication (IG)', 'Traditional Craft', 'Unrefined'],
-    imageUrl: 'https://images.unsplash.com/photo-1518110925495-5fe2fda0442c?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=sea%20salt&label=Garam%20Laut',
     price: 25000,
     unit: 'toples (500g)',
     avgLifespanDays: 90,
@@ -702,7 +704,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-28',
     barcode: '8990660066288',
-    name: 'Teh Hijau Celup Organik Daun Utuh (Isi 25)',
+    name: 'Teh Hijau',
     brand: 'Gunung Mas Biodynamic',
     category: 'Makanan & Minuman',
     ecoScore: 95,
@@ -713,7 +715,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.96,
     transparencyScore: 0.95,
     certifications: ['Demeter Biodynamic', 'USDA Organic', 'Plastic-Free Teabags'],
-    imageUrl: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=green%20tea&label=Teh%20Hijau',
     price: 38000,
     unit: 'box (25 kantong)',
     avgLifespanDays: 25,
@@ -726,7 +728,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-29',
     barcode: '8990770077295',
-    name: 'Pembersih Lantai Konsentrat Minyak Serai & Pine 1L',
+    name: 'Pembersih Lantai',
     brand: 'BumiBersih Lab',
     category: 'Pembersih Rumah',
     ecoScore: 91,
@@ -737,7 +739,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.90,
     transparencyScore: 0.94,
     certifications: ['Natural Anti-Bacterial', 'Pet Safe', 'Greywater Safe'],
-    imageUrl: 'https://images.unsplash.com/photo-1585421514738-01798e348b17?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=floor%20cleaner&label=Pembersih%20Lantai',
     price: 33000,
     unit: 'botol (1L)',
     avgLifespanDays: 30,
@@ -750,7 +752,7 @@ export const SEED_PRODUCTS: ProductData[] = [
   {
     id: 'prod-30',
     barcode: '8990880088301',
-    name: 'Kacang Kedelai Organik Non-GMO 1kg',
+    name: 'Kedelai Organik',
     brand: 'Nusantara Organik',
     category: 'Dapur & Pantry',
     ecoScore: 96,
@@ -761,7 +763,7 @@ export const SEED_PRODUCTS: ProductData[] = [
     certificationScore: 0.96,
     transparencyScore: 0.97,
     certifications: ['Non-GMO Verified', 'Organik Indonesia', 'Direct Farm'],
-    imageUrl: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/api/product-image?q=soybean&label=Kedelai%20Organik',
     price: 32000,
     unit: 'pack (1kg)',
     avgLifespanDays: 60,
@@ -824,8 +826,6 @@ export interface UserProfile {
   householdSize: number;
   dietaryPreference: string;
   greenPoints: number;
-  wasteScore: number; // 0 - 100 (lower is better waste performance)
-  co2SavedThisMonthKg: number;
   badges: Array<{ id: string; name: string; description: string; icon: string; unlockedAt: string }>;
 }
 
@@ -836,8 +836,6 @@ export const INITIAL_USER: UserProfile = {
   householdSize: 4,
   dietaryPreference: 'Organik & Minim Plastik',
   greenPoints: 120,
-  wasteScore: 14.2, // % pemborosan tercatat
-  co2SavedThisMonthKg: 28.6,
   badges: [],
 };
 
@@ -947,32 +945,65 @@ export const INITIAL_INVENTORY: InventoryItem[] = [
   }
 ];
 
-export const INITIAL_WASTE_LOGS = [
+/**
+ * Contoh catatan sampah (empiris, milik pengguna). Setiap entri punya berat & satuan
+ * nyata yang dikonversi ke kg lewat tabel referensi. Tidak ada angka proyeksi.
+ */
+export const INITIAL_WASTE_LOGS: WasteLogEntry[] = [
   {
     id: 'w-01',
-    productName: 'Sayur Bayam Hidroponik',
-    quantity: '1 ikat',
+    productName: 'Sisa sayuran bayam',
+    categoryId: 'organik',
+    quantity: 0.6,
+    unit: 'kg',
     reason: 'Layu di kulkas',
     date: addDays(-4),
-    carbonLossKg: 0.4,
-    financialLoss: 8000
+    source: 'sisa',
   },
   {
     id: 'w-02',
-    productName: 'Roti Gandum Utuh',
-    quantity: '2 lembar',
-    reason: 'Berjamur melewati tanggal kadaluwarsa',
+    productName: 'Roti gandum (berjamur)',
+    categoryId: 'organik',
+    quantity: 0.3,
+    unit: 'kg',
+    reason: 'Melewati kedaluwarsa',
     date: addDays(-12),
-    carbonLossKg: 0.3,
-    financialLoss: 5500
+    source: 'stok',
   },
   {
     id: 'w-03',
-    productName: 'Susu Kedelai Fresh',
-    quantity: '200 ml',
-    reason: 'Asam terlupa diminum',
-    date: addDays(-19),
-    carbonLossKg: 0.5,
-    financialLoss: 7000
-  }
+    productName: 'Botol PET minuman',
+    categoryId: 'anorganik_daur',
+    quantity: 6,
+    unit: 'botol',
+    reason: 'Kemasan sekali pakai',
+    date: addDays(-9),
+    source: 'kemasan',
+  },
+  {
+    id: 'w-04',
+    productName: 'Sachet kopi (foil multilayer)',
+    categoryId: 'residu',
+    quantity: 10,
+    unit: 'sachet',
+    reason: 'Kemasan sulit didaur',
+    date: addDays(-7),
+    source: 'kemasan',
+  },
+];
+
+/**
+ * Contoh catatan pembelian (empiris). Beberapa produk punya ≥2 pembelian
+ * agar estimator bisa menghitung laju konsumsi nyata; sisanya sengaja tunggal
+ * untuk mendemonstrasikan status "data belum cukup".
+ */
+export const INITIAL_PURCHASES: PurchaseLog[] = [
+  { id: 'p-01', productName: 'Beras Pandan Wangi 5kg', category: 'Dapur & Pantry', quantity: 5, unit: 'kg', price: 95000, purchasedAt: addDays(-56) },
+  { id: 'p-02', productName: 'Beras Pandan Wangi 5kg', category: 'Dapur & Pantry', quantity: 5, unit: 'kg', price: 95000, purchasedAt: addDays(-28) },
+  { id: 'p-03', productName: 'Beras Pandan Wangi 5kg', category: 'Dapur & Pantry', quantity: 5, unit: 'kg', price: 95000, purchasedAt: addDays(-2) },
+  { id: 'p-04', productName: 'Minyak Goreng 2L', category: 'Dapur & Pantry', quantity: 2, unit: 'liter', price: 34000, purchasedAt: addDays(-40) },
+  { id: 'p-05', productName: 'Minyak Goreng 2L', category: 'Dapur & Pantry', quantity: 2, unit: 'liter', price: 34000, purchasedAt: addDays(-7) },
+  { id: 'p-06', productName: 'Sabun Mandi Cair 450ml', category: 'Perawatan Diri', quantity: 1, unit: 'botol', price: 32000, purchasedAt: addDays(-10) },
+  { id: 'p-07', productName: 'Deterjen Lerak 1L', category: 'Pembersih Rumah', quantity: 1, unit: 'botol', price: 45000, purchasedAt: addDays(-20) },
+  { id: 'p-08', productName: 'Telur Ayam 1kg', category: 'Makanan & Minuman', quantity: 1, unit: 'kg', price: 30000, purchasedAt: addDays(-5) },
 ];

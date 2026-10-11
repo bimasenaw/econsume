@@ -13,3 +13,9 @@
 *.log
 .DS_Store
 Thumbs.db
+
+# opencode tooling
+/.opencode/
+
+# build cache
+tsconfig.tsbuildinfo

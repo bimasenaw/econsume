@@ -19,7 +19,17 @@ module.exports = {
         card: '#FFFFFF',
       },
       fontFamily: {
-        sans: ['var(--font-inter)'],
+        sans: [
+          'var(--font-sans)',
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          'Segoe UI',
+          'Roboto',
+          'Helvetica Neue',
+          'Arial',
+          'sans-serif',
+        ],
       },
       borderRadius: {
         lg: '16px',

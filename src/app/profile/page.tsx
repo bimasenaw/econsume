@@ -89,9 +89,10 @@ export default function ProfilePage() {
           Batasan saat ini
         </h3>
         <ul className="mt-2 text-xs text-gray-500 space-y-1 list-disc pl-4">
-          <li>Estimasi habis = stok saat ini / laju harian. Bukan machine learning.</li>
-          <li>Eco-Score katalog 30 produk terverifikasi manual, bukan hasil lab LCA.</li>
-          <li>Poin hijau hanya bertambah saat belanja diselesaikan.</li>
+          <li>Estimasi laju konsumsi dihitung dari histori pembelian Anda (butuh ≥2 pembelian &amp; rentang ≥14 hari).</li>
+          <li>Data produk &amp; Eco-Score utama bersumber dari Open Food Facts (basis data terbuka), bukan karangan.</li>
+          <li>Faktor emisi &amp; konversi satuan memakai referensi tersitasi (indikatif), bukan pengukuran langsung.</li>
+          <li>Tidak ada prediksi bila data belum cukup — aplikasi menandainya secara jujur.</li>
         </ul>
       </div>
     </div>

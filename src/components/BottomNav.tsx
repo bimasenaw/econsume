@@ -3,16 +3,16 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ScanLine, ListTodo, ShoppingBag, User } from 'lucide-react';
+import { LayoutDashboard, ScanLine, ListTodo, Recycle, User } from 'lucide-react';
 
 export default function BottomNav() {
   const pathname = usePathname();
 
   const mobileNav = [
     { href: '/dashboard', label: 'Home', icon: LayoutDashboard },
-    { href: '/products', label: 'Produk', icon: ShoppingBag },
-    { href: '/scan', label: 'Scan', icon: ScanLine, isPrimary: true },
     { href: '/shopping-list', label: 'Belanja', icon: ListTodo },
+    { href: '/scan', label: 'Scan', icon: ScanLine, isPrimary: true },
+    { href: '/sampah', label: 'Sampah', icon: Recycle },
     { href: '/profile', label: 'Profil', icon: User },
   ];
 

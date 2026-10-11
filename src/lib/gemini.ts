@@ -49,6 +49,10 @@ export interface GeminiDetectResult {
   origin: (typeof SIH_ORIGIN_IDS)[number];
   confidence: number; // 0-1
   reasoning: string;
+  /** Perkiraan berat total isi produk (gram) — dipakai untuk mengisi otomatis kolom berat. */
+  weightGrams?: number;
+  /** Perkiraan harga eceran (Rupiah) — dipakai untuk mengisi otomatis kolom harga. */
+  priceRp?: number;
 }
 
 const SYSTEM_PROMPT = `Kamu adalah asisten klasifikasi kemasan produk rumah tangga Indonesia untuk aplikasi EcoConsume AI.
@@ -75,6 +79,9 @@ Tugas:
 3. Tebak nama produk + merek yang terlihat di kemasan (OCR label bila bisa dibaca).
 4. Tentukan asal barang: lokal (produk daerah/pasar), nasional (merek Indonesia antar-pulau),
    impor (merek luar / label impor). Bila ragu pilih nasional.
+5. Perkirakan BERAT total isi produk dalam gram ("weightGrams") dan HARGA eceran dalam Rupiah
+   ("priceRp"). Ini hanya perkiraan dari ukuran kemasan & jenis barang; bila sangat tidak yakin,
+   beri angka wajar (mis. 500, 1000) dan harga umumnya.
 
 BALAS HANYA JSON valid tanpa markdown, tanpa penjelasan di luar JSON, dengan skema persis:
 {
@@ -85,6 +92,8 @@ BALAS HANYA JSON valid tanpa markdown, tanpa penjelasan di luar JSON, dengan ske
   "packaging": "...",
   "origin": "...",
   "confidence": 0.0-1.0,
+  "weightGrams": 0,
+  "priceRp": 0,
   "reasoning": "satu kalimat Bahasa Indonesia"
 }`;
 
@@ -99,6 +108,8 @@ function sanitizeResult(raw: unknown): GeminiDetectResult {
   const pick = <T extends string>(v: unknown, allowed: readonly T[], fallback: T): T =>
     typeof v === 'string' && (allowed as readonly string[]).includes(v) ? (v as T) : fallback;
   const num = Number(r.confidence);
+  const weightGrams = Number(r.weightGrams);
+  const priceRp = Number(r.priceRp);
   const freeText = (v: unknown, fallback: string) =>
     typeof v === 'string' && v.trim() ? v.trim().slice(0, 120) : fallback;
   return {
@@ -115,6 +126,8 @@ function sanitizeResult(raw: unknown): GeminiDetectResult {
     origin: pick(r.origin, SIH_ORIGIN_IDS, 'nasional'),
     confidence: Number.isFinite(num) ? Math.min(1, Math.max(0, num)) : 0.5,
     reasoning: typeof r.reasoning === 'string' ? r.reasoning.slice(0, 300) : '',
+    weightGrams: Number.isFinite(weightGrams) && weightGrams > 0 ? Math.round(weightGrams) : undefined,
+    priceRp: Number.isFinite(priceRp) && priceRp > 0 ? Math.round(priceRp) : undefined,
   };
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import {
   ProductData,
   InventoryItem,
@@ -8,9 +8,19 @@ import {
   UserProfile,
   INITIAL_USER,
   INITIAL_INVENTORY,
-  SEED_PRODUCTS,
+  INITIAL_WASTE_LOGS,
+  INITIAL_PURCHASES,
 } from '@/data/seedData';
-import { predictConsumption, PredictionResultItem } from '@/lib/algorithms';
+import {
+  estimateConsumption,
+  buildPredictions,
+  summarizeWaste,
+  type PurchaseLog,
+  type WasteLogEntry,
+  type ConsumptionEstimate,
+  type PredictionItem,
+  type WasteSummary,
+} from '@/lib/tracking';
 
 interface AppContextType {
   user: UserProfile;
@@ -19,15 +29,32 @@ interface AppContextType {
   setInventory: React.Dispatch<React.SetStateAction<InventoryItem[]>>;
   shoppingList: ShoppingListItem[];
   setShoppingList: React.Dispatch<React.SetStateAction<ShoppingListItem[]>>;
-  predictions: PredictionResultItem[];
-  addToInventory: (product: ProductData, quantity?: number, expiryDate?: string, location?: string) => void;
+  purchaseLogs: PurchaseLog[];
+  wasteLogs: WasteLogEntry[];
+  estimates: ConsumptionEstimate[];
+  predictions: PredictionItem[];
+  wasteSummary: WasteSummary;
+  addToInventory: (product: ProductData, quantity?: number, expiryDate?: string, location?: InventoryItem['location']) => void;
   removeFromInventory: (id: string) => void;
+  updateInventoryItem: (
+    id: string,
+    patch: {
+      name?: string;
+      location?: InventoryItem['location'];
+      quantity?: number;
+      unit?: string;
+      expiryDate?: string;
+    }
+  ) => void;
   addToShoppingList: (product: ProductData, quantity?: number, isAiRecommended?: boolean) => void;
   toggleShoppingItem: (id: string) => void;
   removeShoppingItem: (id: string) => void;
   generateShoppingListFromPredictions: () => void;
+  addPurchaseLog: (log: Omit<PurchaseLog, 'id'>) => void;
+  removePurchaseLog: (id: string) => void;
+  addWasteLog: (log: Omit<WasteLogEntry, 'id'>) => void;
+  removeWasteLog: (id: string) => void;
   addGreenPoints: (points: number, reason: string) => void;
-  recordWaste: (productName: string, quantity: string, reason: string) => void;
   compareList: ProductData[];
   addToCompare: (product: ProductData) => void;
   removeFromCompare: (productId: string) => void;
@@ -36,9 +63,21 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+function load<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile>(INITIAL_USER);
   const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
+  const [purchaseLogs, setPurchaseLogs] = useState<PurchaseLog[]>(INITIAL_PURCHASES);
+  const [wasteLogs, setWasteLogs] = useState<WasteLogEntry[]>(INITIAL_WASTE_LOGS);
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([
     {
       id: 'shop-01',
@@ -87,157 +126,183 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       grade: 'A',
       checked: true,
       carbonSavedKg: 3.8,
-    }
+    },
   ]);
   const [compareList, setCompareList] = useState<ProductData[]>([]);
 
-  // Load from LocalStorage if available
+  // Load from LocalStorage
   useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem('ecoconsume_user');
-      const savedInv = localStorage.getItem('ecoconsume_inventory');
-      const savedShop = localStorage.getItem('ecoconsume_shopping');
-
-      if (savedUser) setUser(JSON.parse(savedUser));
-      if (savedInv) setInventory(JSON.parse(savedInv));
-      if (savedShop) setShoppingList(JSON.parse(savedShop));
-    } catch {
-      // ignore
-    }
+    setUser(load('ecoconsume_user', INITIAL_USER));
+    setInventory(load('ecoconsume_inventory', INITIAL_INVENTORY));
+    setShoppingList(load('ecoconsume_shopping', [
+      {
+        id: 'shop-01',
+        productId: 'prod-01',
+        name: 'Beras Organik Pandan Wangi 5kg',
+        brand: 'Nusantara Organik',
+        category: 'Makanan & Minuman',
+        quantity: 1,
+        unit: 'sak (5kg)',
+        estimatedPrice: 95000,
+        isAiRecommended: true,
+        priority: 'high',
+        ecoScore: 92,
+        grade: 'A',
+        checked: false,
+        carbonSavedKg: 2.6,
+      },
+    ]));
+    setPurchaseLogs(load('ecoconsume_purchases', INITIAL_PURCHASES));
+    setWasteLogs(load('ecoconsume_waste', INITIAL_WASTE_LOGS));
   }, []);
 
-  // Save to LocalStorage
+  // Persist
   useEffect(() => {
     try {
       localStorage.setItem('ecoconsume_inventory', JSON.stringify(inventory));
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, [inventory]);
-
   useEffect(() => {
     try {
       localStorage.setItem('ecoconsume_shopping', JSON.stringify(shoppingList));
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, [shoppingList]);
+  useEffect(() => {
+    try {
+      localStorage.setItem('ecoconsume_purchases', JSON.stringify(purchaseLogs));
+    } catch {}
+  }, [purchaseLogs]);
+  useEffect(() => {
+    try {
+      localStorage.setItem('ecoconsume_waste', JSON.stringify(wasteLogs));
+    } catch {}
+  }, [wasteLogs]);
 
-  const predictions = predictConsumption({
-    userId: user.id,
-    householdSize: user.householdSize,
-    items: inventory.map((inv) => ({
-      productId: inv.productId,
-      currentQuantity: inv.quantity,
-      lastPurchasedAt: inv.purchasedAt,
-      avgDailyConsumption: inv.avgDailyConsumption,
-    })),
-  });
+  // Empirical derivations
+  const estimates = useMemo(() => estimateConsumption(purchaseLogs), [purchaseLogs]);
+  const predictions = useMemo(() => buildPredictions(inventory, estimates), [inventory, estimates]);
+  const wasteSummary = useMemo(
+    () => summarizeWaste(wasteLogs, user.householdSize),
+    [wasteLogs, user.householdSize]
+  );
 
-  const addToInventory = (
-    product: ProductData,
-    quantity = 1,
-    expiryDate?: string,
-    location = 'Pantry'
-  ) => {
-    const nowStr = new Date().toISOString().split('T')[0];
-    const exp =
-      expiryDate ||
-      new Date(Date.now() + (product.avgLifespanDays || 14) * 86400000)
-        .toISOString()
-        .split('T')[0];
+  const addToInventory = useCallback(
+    (product: ProductData, quantity = 1, expiryDate?: string, location: InventoryItem['location'] = 'Pantry') => {
+      const nowStr = new Date().toISOString().split('T')[0];
+      const exp =
+        expiryDate ||
+        new Date(Date.now() + (product.avgLifespanDays || 14) * 86400000).toISOString().split('T')[0];
 
-    const newItem: InventoryItem = {
-      id: `inv-${Date.now()}`,
-      userId: user.id,
-      productId: product.id,
-      product,
-      quantity,
-      unit: product.unit.split(' ')[0] || 'pcs',
-      expiryDate: exp,
-      purchasedAt: nowStr,
-      location: location as any,
-      avgDailyConsumption: Number((quantity / (product.avgLifespanDays || 14)).toFixed(3)),
-    };
+      const newItem: InventoryItem = {
+        id: `inv-${Date.now()}`,
+        userId: user.id,
+        productId: product.id,
+        product,
+        quantity,
+        unit: product.unit.split(' ')[0] || 'pcs',
+        expiryDate: exp,
+        purchasedAt: nowStr,
+        location,
+        avgDailyConsumption: 0,
+      };
+      setInventory((prev) => [newItem, ...prev]);
+    },
+    [user.id]
+  );
 
-    setInventory((prev) => [newItem, ...prev]);
-  };
-
-  const removeFromInventory = (id: string) => {
+  const removeFromInventory = useCallback((id: string) => {
     setInventory((prev) => prev.filter((item) => item.id !== id));
-  };
+  }, []);
 
-  const addToShoppingList = (
-    product: ProductData,
-    quantity = 1,
-    isAiRecommended = false
-  ) => {
-    const exists = shoppingList.find((item) => item.productId === product.id);
-    if (exists) {
-      setShoppingList((prev) =>
-        prev.map((item) =>
-          item.productId === product.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        )
+  const updateInventoryItem = useCallback(
+    (
+      id: string,
+      patch: {
+        name?: string;
+        location?: InventoryItem['location'];
+        quantity?: number;
+        unit?: string;
+        expiryDate?: string;
+      }
+    ) => {
+      setInventory((prev) =>
+        prev.map((item) => {
+          if (item.id !== id) return item;
+          return {
+            ...item,
+            quantity: patch.quantity ?? item.quantity,
+            unit: patch.unit ?? item.unit,
+            expiryDate: patch.expiryDate ?? item.expiryDate,
+            location: patch.location ?? item.location,
+            product: {
+              ...item.product,
+              name: patch.name ?? item.product.name,
+            },
+          };
+        })
       );
-      return;
-    }
+    },
+    []
+  );
 
-    const newItem: ShoppingListItem = {
-      id: `shop-${Date.now()}`,
-      productId: product.id,
-      name: product.name,
-      brand: product.brand,
-      category: product.category,
-      quantity,
-      unit: product.unit,
-      estimatedPrice: product.price * quantity,
-      isAiRecommended,
-      priority: product.ecoScore >= 80 ? 'high' : 'medium',
-      ecoScore: product.ecoScore,
-      grade: product.grade,
-      checked: false,
-      carbonSavedKg: Number(((4.0 - product.co2PerUnitKg) * quantity).toFixed(1)),
-    };
+  const addToShoppingList = useCallback(
+    (product: ProductData, quantity = 1, isAiRecommended = false) => {
+      setShoppingList((prev) => {
+        const exists = prev.find((item) => item.productId === product.id);
+        if (exists) {
+          return prev.map((item) =>
+            item.productId === product.id ? { ...item, quantity: item.quantity + quantity } : item
+          );
+        }
+        const newItem: ShoppingListItem = {
+          id: `shop-${Date.now()}`,
+          productId: product.id,
+          name: product.name,
+          brand: product.brand,
+          category: product.category,
+          quantity,
+          unit: product.unit,
+          estimatedPrice: product.price * quantity,
+          isAiRecommended,
+          priority: product.ecoScore >= 80 ? 'high' : 'medium',
+          ecoScore: product.ecoScore,
+          grade: product.grade,
+          checked: false,
+          carbonSavedKg: Number(((4.0 - product.co2PerUnitKg) * quantity).toFixed(1)),
+        };
+        return [newItem, ...prev];
+      });
+    },
+    []
+  );
 
-    setShoppingList((prev) => [newItem, ...prev]);
-  };
+  const toggleShoppingItem = useCallback((id: string) => {
+    setShoppingList((prev) => prev.map((item) => (item.id === id ? { ...item, checked: !item.checked } : item)));
+  }, []);
 
-  const toggleShoppingItem = (id: string) => {
-    setShoppingList((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, checked: !item.checked } : item
-      )
-    );
-  };
-
-  const removeShoppingItem = (id: string) => {
+  const removeShoppingItem = useCallback((id: string) => {
     setShoppingList((prev) => prev.filter((item) => item.id !== id));
-  };
+  }, []);
 
-  const generateShoppingListFromPredictions = () => {
-    const lowStockItems = predictions.filter((p) => p.daysRemaining <= 5);
+  const generateShoppingListFromPredictions = useCallback(() => {
+    const lowStockItems = predictions.filter((p) => p.sufficient && p.daysRemaining !== null && p.daysRemaining <= 5);
+    lowStockItems.forEach((pred) => addToShoppingList(pred.product, 1, true));
+  }, [predictions, addToShoppingList]);
 
-    lowStockItems.forEach((pred) => {
-      // Look for greener alternative if current product has low ecoScore
-      let chosenProduct = pred.product;
-      if (chosenProduct.ecoScore < 80) {
-        const greener = SEED_PRODUCTS.find(
-          (p) => p.category === chosenProduct.category && p.ecoScore >= 80
-        );
-        if (greener) chosenProduct = greener;
-      }
+  const addPurchaseLog = useCallback((log: Omit<PurchaseLog, 'id'>) => {
+    setPurchaseLogs((prev) => [{ ...log, id: `p-${Date.now()}` }, ...prev]);
+  }, []);
+  const removePurchaseLog = useCallback((id: string) => {
+    setPurchaseLogs((prev) => prev.filter((l) => l.id !== id));
+  }, []);
+  const addWasteLog = useCallback((log: Omit<WasteLogEntry, 'id'>) => {
+    setWasteLogs((prev) => [{ ...log, id: `w-${Date.now()}` }, ...prev]);
+  }, []);
+  const removeWasteLog = useCallback((id: string) => {
+    setWasteLogs((prev) => prev.filter((l) => l.id !== id));
+  }, []);
 
-      // Check if already in shopping list
-      const inList = shoppingList.some((s) => s.productId === chosenProduct.id);
-      if (!inList) {
-        addToShoppingList(chosenProduct, 1, true);
-      }
-    });
-  };
-
-  const addGreenPoints = (points: number, _reason: string) => {
+  const addGreenPoints = useCallback((points: number, _reason: string) => {
     setUser((prev) => {
       const updated = { ...prev, greenPoints: prev.greenPoints + points };
       try {
@@ -245,66 +310,53 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       } catch {}
       return updated;
     });
-  };
+  }, []);
 
-  const recordWaste = (_productName: string, _quantity: string, _reason: string) => {
-    setUser((prev) => {
-      const updated = {
-        ...prev,
-        wasteScore: Math.min(100, Number((prev.wasteScore + 1.5).toFixed(1))),
-      };
-      try {
-        localStorage.setItem('ecoconsume_user', JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-  };
-
-  const addToCompare = (product: ProductData) => {
-    if (compareList.length >= 3) {
-      alert('Maksimal membandingkan 3 produk sekaligus');
-      return;
-    }
-    if (!compareList.some((p) => p.id === product.id)) {
-      setCompareList([...compareList, product]);
-    }
-  };
-
-  const removeFromCompare = (productId: string) => {
-    setCompareList((prev) => prev.filter((p) => p.id !== productId));
-  };
-
-  const clearCompare = () => {
-    setCompareList([]);
-  };
-
-  return (
-    <AppContext.Provider
-      value={{
-        user,
-        setUser,
-        inventory,
-        setInventory,
-        shoppingList,
-        setShoppingList,
-        predictions,
-        addToInventory,
-        removeFromInventory,
-        addToShoppingList,
-        toggleShoppingItem,
-        removeShoppingItem,
-        generateShoppingListFromPredictions,
-        addGreenPoints,
-        recordWaste,
-        compareList,
-        addToCompare,
-        removeFromCompare,
-        clearCompare,
-      }}
-    >
-      {children}
-    </AppContext.Provider>
+  const addToCompare = useCallback(
+    (product: ProductData) => {
+      setCompareList((prev) => {
+        if (prev.length >= 3 || prev.some((p) => p.id === product.id)) return prev;
+        return [...prev, product];
+      });
+    },
+    []
   );
+  const removeFromCompare = useCallback((productId: string) => {
+    setCompareList((prev) => prev.filter((p) => p.id !== productId));
+  }, []);
+  const clearCompare = useCallback(() => setCompareList([]), []);
+
+  const value: AppContextType = {
+    user,
+    setUser,
+    inventory,
+    setInventory,
+    shoppingList,
+    setShoppingList,
+    purchaseLogs,
+    wasteLogs,
+    estimates,
+    predictions,
+    wasteSummary,
+    addToInventory,
+    removeFromInventory,
+    updateInventoryItem,
+    addToShoppingList,
+    toggleShoppingItem,
+    removeShoppingItem,
+    generateShoppingListFromPredictions,
+    addPurchaseLog,
+    removePurchaseLog,
+    addWasteLog,
+    removeWasteLog,
+    addGreenPoints,
+    compareList,
+    addToCompare,
+    removeFromCompare,
+    clearCompare,
+  };
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
 export function useApp() {
