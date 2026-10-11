@@ -1,0 +1,15 @@
+# dependencies
+/node_modules
+
+# next.js build output
+/.next/
+/out/
+
+# env files (JANGAN commit key asli)
+/.env*.local
+.env
+
+# logs & OS
+*.log
+.DS_Store
+Thumbs.db
