@@ -163,7 +163,7 @@ function SihAiTab() {
         <div className="flex items-start gap-2 p-3 rounded-2xl bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800">
           <BrainCircuit className="w-4 h-4 text-violet-600 shrink-0 mt-0.5" />
           <p className="text-[11px] text-slate-600 dark:text-slate-300">
-            AI (Gemini) hanya <b>membaca jenis barang & kemasan</b> dari foto. Skor dihitung dari input
+            AI hanya <b>membaca jenis barang & kemasan</b> dari foto. Skor dihitung dari input
             terukur Anda (berat, harga, asal) — bukan tebakan visual.
           </p>
         </div>
@@ -184,7 +184,7 @@ function SihAiTab() {
           className="w-full cursor-pointer py-3.5 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 transition-colors"
         >
           {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BrainCircuit className="w-4 h-4" />}
-          {aiLoading ? 'Gemini membaca foto…' : 'Kenali Jenis Barang dengan AI'}
+          {aiLoading ? 'Menganalisa foto…' : 'Kenali Jenis Barang'}
         </button>
         {aiError && (
           <p role="alert" className="flex items-center gap-2 text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl px-3 py-2">
